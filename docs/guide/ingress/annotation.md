@@ -34,6 +34,7 @@ You can add kubernetes annotations to ingress and service objects to customize t
 |[alb.ingress.kubernetes.io/ip-address-type](#ip-address-type)|ipv4 \| dualstack|ipv4|ingress|
 |[alb.ingress.kubernetes.io/listen-ports](#listen-ports)|json|'[{"HTTP": 80}]' \| '[{"HTTPS": 443}]'|ingress|
 |[alb.ingress.kubernetes.io/load-balancer-attributes](#load-balancer-attributes)|stringMap|N/A|ingress|
+|[alb.ingress.kubernetes.io/namespace.${service-name}](#service-namespace)|string|N/A|ingress|
 |[alb.ingress.kubernetes.io/scheme](#scheme)|internal \| internet-facing|internal|ingress|
 |[alb.ingress.kubernetes.io/security-groups](#security-groups)|stringList|N/A|ingress|
 |[alb.ingress.kubernetes.io/ssl-policy](#ssl-policy)|string|ELBSecurityPolicy-2016-08|ingress|
@@ -129,6 +130,31 @@ Traffic Routing can be controlled with following annotations:
                         backend:
                           serviceName: response-503
                           servicePort: use-annotation
+            ```
+
+- <a name="service-namespace">`alb.ingress.kubernetes.io/namespace.${service-name}`</a> Allows a LoadBalancer to target services in another namespace.
+
+    The `service-name` in the annotation must match the serviceName in the ingress rules.
+
+    !!!example
+        - target service in demo namespace
+            ```yaml
+            apiVersion: extensions/v1beta1
+            kind: Ingress
+            metadata:
+              namespace: default
+              name: ingress
+              annotations:
+                kubernetes.io/ingress.class: alb
+                alb.ingress.kubernetes.io/namespace.gameservice: 'demo'
+            spec:
+              rules:
+                - http:
+                    paths:
+                      - path: /game
+                        backend:
+                          serviceName: gameservice
+                          servicePort: http
             ```
 
 ## Access control

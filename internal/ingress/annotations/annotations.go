@@ -223,3 +223,14 @@ func LoadJSONAnnotation(annotation string, value interface{}, annotations ...map
 	}
 	return true, nil
 }
+
+// ResolveServiceNamespace finds an annotation of type namespace.<service-name> on ingress and returns the
+// actually targeted service namespace to the caller.
+func ResolveServiceNamespace(ingress *extensions.Ingress, backend extensions.IngressBackend) string {
+	key := parser.GetAnnotationWithPrefix("namespace." + backend.ServiceName)
+	raw, ok := utils.MapFindFirst(key, ingress.Annotations)
+	if !ok {
+		return ingress.Namespace
+	}
+	return raw
+}

@@ -23,6 +23,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/elbv2"
 	"github.com/kubernetes-sigs/aws-alb-ingress-controller/internal/aws"
+	"github.com/kubernetes-sigs/aws-alb-ingress-controller/internal/ingress/annotations"
 	"github.com/kubernetes-sigs/aws-alb-ingress-controller/internal/ingress/controller/store"
 	corev1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
@@ -55,7 +56,8 @@ func (resolver *endpointResolver) Resolve(ingress *extensions.Ingress, backend *
 }
 
 func (resolver *endpointResolver) resolveInstance(ingress *extensions.Ingress, backend *extensions.IngressBackend) ([]*elbv2.TargetDescription, error) {
-	service, servicePort, err := findServiceAndPort(resolver.store, ingress.Namespace, backend.ServiceName, backend.ServicePort)
+	serviceNamespace := annotations.ResolveServiceNamespace(ingress, *backend)
+	service, servicePort, err := findServiceAndPort(resolver.store, serviceNamespace, backend.ServiceName, backend.ServicePort)
 	if err != nil {
 		return nil, err
 	}
@@ -83,11 +85,12 @@ func (resolver *endpointResolver) resolveInstance(ingress *extensions.Ingress, b
 }
 
 func (resolver *endpointResolver) resolveIP(ingress *extensions.Ingress, backend *extensions.IngressBackend) ([]*elbv2.TargetDescription, error) {
-	service, servicePort, err := findServiceAndPort(resolver.store, ingress.Namespace, backend.ServiceName, backend.ServicePort)
+	serviceNamespace := annotations.ResolveServiceNamespace(ingress, *backend)
+	service, servicePort, err := findServiceAndPort(resolver.store, serviceNamespace, backend.ServiceName, backend.ServicePort)
 	if err != nil {
 		return nil, err
 	}
-	serviceKey := ingress.Namespace + "/" + service.Name
+	serviceKey := serviceNamespace + "/" + service.Name
 	eps, err := resolver.store.GetServiceEndpoints(serviceKey)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to find service endpoints for %s: %v", serviceKey, err.Error())

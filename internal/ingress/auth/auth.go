@@ -101,8 +101,9 @@ func (m *defaultModule) NewConfig(ctx context.Context, ingress *extensions.Ingre
 	ingressAnnos := ingress.Annotations
 	var serviceAnnos map[string]string
 	if !action.Use(backend.ServicePort.String()) {
+		serviceNamespace := annotations.ResolveServiceNamespace(ingress, backend)
 		serviceKey := types.NamespacedName{
-			Namespace: ingress.Namespace,
+			Namespace: serviceNamespace,
 			Name:      backend.ServiceName,
 		}
 		service := corev1.Service{}

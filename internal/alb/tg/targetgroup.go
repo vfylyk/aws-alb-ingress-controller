@@ -64,7 +64,9 @@ func (controller *defaultController) Reconcile(ctx context.Context, ingress *ext
 	if err != nil {
 		return TargetGroup{}, fmt.Errorf("failed to load ingressAnnotation due to %v", err)
 	}
-	serviceKey := types.NamespacedName{Namespace: ingress.Namespace, Name: backend.ServiceName}
+
+	serviceNamespace := annotations.ResolveServiceNamespace(ingress, backend)
+	serviceKey := types.NamespacedName{Namespace: serviceNamespace, Name: backend.ServiceName}
 	serviceAnnos, err := controller.store.GetServiceAnnotations(serviceKey.String(), ingressAnnos)
 	if err != nil {
 		return TargetGroup{}, fmt.Errorf("failed to load serviceAnnotation due to %v", err)
@@ -73,13 +75,13 @@ func (controller *defaultController) Reconcile(ctx context.Context, ingress *ext
 	protocol := aws.StringValue(serviceAnnos.TargetGroup.BackendProtocol)
 	targetType := aws.StringValue(serviceAnnos.TargetGroup.TargetType)
 
-	healthCheckPort, err := controller.resolveServiceHealthCheckPort(ingress.Namespace, backend.ServiceName, intstr.Parse(*serviceAnnos.HealthCheck.Port), targetType)
+	healthCheckPort, err := controller.resolveServiceHealthCheckPort(serviceNamespace, backend.ServiceName, intstr.Parse(*serviceAnnos.HealthCheck.Port), targetType)
 
 	if err != nil {
 		return TargetGroup{}, fmt.Errorf("failed to resolve healthcheck port due to %v", err)
 	}
 
-	tgName := controller.nameTagGen.NameTG(ingress.Namespace, ingress.Name, backend.ServiceName, backend.ServicePort.String(), targetType, protocol)
+	tgName := controller.nameTagGen.NameTG(ingress.Namespace, ingress.Name, serviceNamespace+"/"+backend.ServiceName, backend.ServicePort.String(), targetType, protocol)
 	tgInstance, err := controller.findExistingTGInstance(ctx, tgName)
 	if err != nil {
 		return TargetGroup{}, fmt.Errorf("failed to find existing targetGroup due to %v", err)
