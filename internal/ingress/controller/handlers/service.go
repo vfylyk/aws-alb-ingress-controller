@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -49,7 +48,7 @@ func (h *EnqueueRequestsForServiceEvent) Generic(e event.GenericEvent, queue wor
 //TODO: this can be further optimized to only included ingresses referenced this service :D
 func (h *EnqueueRequestsForServiceEvent) enqueueImpactedIngresses(service *corev1.Service, queue workqueue.RateLimitingInterface) {
 	ingressList := &extensions.IngressList{}
-	if err := h.Cache.List(context.Background(), client.InNamespace(service.Namespace), ingressList); err != nil {
+	if err := h.Cache.List(context.Background(), nil, ingressList); err != nil {
 		glog.Errorf("failed to fetch impacted ingresses by service due to %v", err)
 		return
 	}
